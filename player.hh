@@ -27,11 +27,12 @@ protected:
   typedef set<Card*,num_sorter_functor> NumSortedSet;
 
 public:
-  int _my_id, _knock_id;
-  int _num_players;
-  set<Card*> _cards_left;
-  Hand const* _hand;
-  vector<Hand> _hands;
+  int _my_id;    //my "turn number"
+  int _knock_id; //who knocked? (-1 if no one knocked)
+  int _num_players;        //number of players in game
+  set<Card*> _cards_left;  //which cards are still in the deck
+  Hand const* _hand;       //What's in my hand?
+  vector<Hand> _hands;     //what do I know is in other's hands?
 
   Player() {
   }
