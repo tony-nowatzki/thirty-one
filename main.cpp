@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   //}
   addPlayer(new TimingPlayer(),game,players);
   addPlayer(new WittyPlayer(),game,players);
-  //addPlayer(new SecretivePlayer(),game,players);
+  addPlayer(new SecretivePlayer(),game,players);
   //addPlayer(new TimingPlayer(),game,players);
   addPlayer(new HoldoutPlayer(),game,players);
 

@@ -12,7 +12,7 @@ using namespace std;
 class Player {
 
 protected:
-  int n_turns;
+  int _n_turns;
 
   struct num_sorter_functor {
     bool operator() (const Card* lhs, const Card* rhs) const{
@@ -27,7 +27,7 @@ protected:
   typedef set<Card*,num_sorter_functor> NumSortedSet;
 
 public:
-  int _my_id;
+  int _my_id, _knock_id;
   int _num_players;
   set<Card*> _cards_left;
   Hand const* _hand;
@@ -75,7 +75,8 @@ public:
     }
     _hands.clear();
     _hands.resize(np);
-    n_turns=0;
+    _n_turns=0;
+    _knock_id=-1;
   }
 
   virtual string player_name() {
@@ -84,8 +85,11 @@ public:
 
   virtual void inform_turn(int player_id, bool knocked, bool stack, 
                      bool pile, Card* pile_card, Card* drop_card) {
+    if(knocked) {
+      _knock_id = player_id;
+    }
     if(player_id==0) {
-      n_turns++;
+      _n_turns++;
     }
     // Lets keep track of what are the remaining cards.
     if(pile_card) {
@@ -126,13 +130,6 @@ public:
     return drop_card;
   }
 
-};
-
-class SecretivePlayer : public Player {
-  virtual bool choose_pile(Card* face) {
-    return false;
-  }
-  virtual string player_name() {return "secret-";}
 };
 
 class WittyPlayer : public Player {
@@ -187,6 +184,12 @@ protected:
     hyp_hand.add_card(face);
     hyp_hand.remove_card(hyp_hand.worst());
 
+    if(_knock_id!=-1) {
+      if(hyp_hand.score() > _hand->score()) {
+        return true;
+      }
+      return false;
+    }
     if((hyp_hand.score() > _hand->score() && hyp_hand.score()>=29) || 
        (hyp_hand.score() > _hand->score() + 4) ||
        (hyp_hand.score() > _hand->score() && face->num()>=10) ) {
@@ -205,7 +208,7 @@ protected:
   virtual bool choose_knock(Card* face) override {
     auto pair = _hand->val_of_hand();
     int score = pair.second;
-    if (safe_to_knock(score) || score >= 22 + 3*n_turns|| score == 30) {
+    if (safe_to_knock(score) || score >= 21 + 2*_n_turns|| score == 30) {
       return true;
     } else {
       return false;
@@ -213,6 +216,30 @@ protected:
   }
   virtual string player_name() {return "timing-";}
 };
+
+class SecretivePlayer : public TimingPlayer {
+protected:
+  virtual bool choose_pile(Card* face) override {
+    //create hypothetical hand
+    Hand hyp_hand(*_hand);
+    hyp_hand.add_card(face);
+    hyp_hand.remove_card(hyp_hand.worst());
+
+    if(_knock_id!=-1) {
+      if(hyp_hand.score() > _hand->score()) {
+        return true;
+      }
+      return false;
+    }
+
+    if(hyp_hand.score() > _hand->score() && hyp_hand.score()>=27 ) {
+      return true;
+    }
+    return false;
+  }
+  virtual string player_name() {return "secret-";}
+};
+
 
 class HoldoutPlayer : public TimingPlayer {
 protected: 
@@ -223,7 +250,14 @@ protected:
     hyp_hand.add_card(face);
     hyp_hand.remove_card(hyp_hand.worst());
 
-    if(n_turns<=5 && face->num() >= 10 && hyp_hand.score() <= 14
+    if(_knock_id!=-1) {
+      if(hyp_hand.score() > _hand->score()) {
+        return true;
+      }
+      return false;
+    }
+
+    if(_n_turns<=5 && face->num() >= 10 && hyp_hand.score() <= 14
         && hyp_hand.score() -4 >= _hand->score()) {
       return true;
     } else {
